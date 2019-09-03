@@ -167,16 +167,23 @@ func (s *Session) IllustSearch(term string, target SearchTarget, page int) (*Ill
 	return res, nil
 }
 
-// Download an image from the illustration
-//
-// If no meta pages are set, page parameter is ignored
-func (s *Session) Download(i *Illust, size ImageSize, page int) (io.ReadCloser, error) {
+// DownloadLink fetches the download link of the illustration
+func (s *Session) DownloadLink(i *Illust, size ImageSize, page int) string {
 	uri := i.ImageURLs[size]
 	if len(i.MetaPages) > 0 {
 		uri = i.MetaPages[page].ImageURLs[size]
 	} else if size == SizeOriginal {
 		uri = i.MetaSinglePage.OriginalImageURL
 	}
+
+	return uri
+}
+
+// Download an image from the illustration
+//
+// If no meta pages are set, page parameter is ignored
+func (s *Session) Download(i *Illust, size ImageSize, page int) (io.ReadCloser, error) {
+	uri := s.DownloadLink(i, size, page)
 
 	r := s.r.New()
 	req, err := r.Set("Referer", "https://app-api.pixiv.net/").Get(uri).Request()
