@@ -27,6 +27,16 @@ const (
 	SizeSquareMedium           = "square_medium"
 )
 
+// SearchTarget types
+type SearchTarget string
+
+// The different search targets
+const (
+	SearchPartialTags     SearchTarget = "partial_match_for_tags"
+	SearchExactTags                    = "exact_match_for_tags"
+	SearchTitleAndCaption              = "title_and_caption"
+)
+
 // Illust Details
 type Illust struct {
 	MetaPage
@@ -121,6 +131,40 @@ func (s *Session) IllustDetail(id uint64) (*Illust, error) {
 	}
 
 	return res.Illust, nil
+}
+
+// IllustSearch searches for illustrations
+func (s *Session) IllustSearch(term string, target SearchTarget, page int) (*Illusts, error) {
+	if err := s.refreshAuth(); err != nil {
+		return nil, err
+	}
+
+	res := new(Illusts)
+	apiErr := new(APIError)
+
+	offset := (page - 1) * 30
+	if offset < 0 {
+		offset = 0
+	}
+
+	_, err := s.r.New().Get("v1/search/illust").QueryStruct(struct {
+		Term   string       `url:"word"`
+		Target SearchTarget `url:"search_target"`
+		Offset int          `url:"offset"`
+	}{
+		Term:   term,
+		Target: target,
+		Offset: offset,
+	}).Receive(&res, &apiErr)
+	if err != nil {
+		return nil, err
+	}
+
+	if apiErr.HasError() {
+		return nil, apiErr
+	}
+
+	return res, nil
 }
 
 // Download an image from the illustration
